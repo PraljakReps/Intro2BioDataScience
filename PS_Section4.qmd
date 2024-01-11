@@ -1,0 +1,139 @@
+---
+title: "section4_code_walkthrough"
+format: html
+editor: visual
+---
+
+## 
+
+## Section 4 (in-class code walkthrough):
+
+DATE: 01/11/2024
+
+GROUP: 1
+
+TA: Niksa
+
+## Flight cancelled
+
+Lots of flights have `NA`s in `dep_delay` or `arr_delay`. These are apparently cancelled flights. Let’s get rid of them here, and save the result to a nice name in case we want to use it later. Notice that you need to day the name of the data frame at the end of the code cell to show it in the notebook.
+
+```{r}
+
+not_cancelled <- flights |>
+    filter(!is.na(dep_delay) & !is.na(arr_delay))
+not_cancelled
+```
+
+#### Were any flights cancelled midair?
+
+#TODO
+
+---------------------------------------------------------------------------
+
+\<ANS\>
+
+---------------------------------------------------------------------------
+
+# **Chatper 5.6.7:**
+
+Tip: remind the students that `group_by` divides tables into mini-tables by the group, and that summarize collapses that table down to a single row.
+
+```{r}
+
+flights
+```
+
+#### Exercise: Find flights that are always 10 min late across the year.
+
+#TODO
+
+---------------------------------------------------------------------------
+
+\<ANS\>
+
+--------------------------------------------------------------------------
+
+#### Exercise: Look at the number of cancelled flights per day. Is there a pattern?
+
+#TODO
+
+---------------------------------------------------------------------------
+
+\<ANS\>
+
+---------------------------------------------------------------------------
+
+#### Is the proportion of cancelled flights related to the average delay?
+
+#TODO
+
+---------------------------------------------------------------------------
+
+\<ANS\>
+
+---------------------------------------------------------------------------
+
+#### Plot avg_delay vs. prop_cancelled
+
+#TODO
+
+---------------------------------------------------------------------------
+
+\<ANS\>
+
+---------------------------------------------------------------------------
+
+## 5.7 **Grouped mutates and filters**
+
+#### Find all groups bigger than a threshold. Which destinations received more than one flight per day over the year?
+
+#TODO
+
+---------------------------------------------------------------------------
+
+\<ANS\>
+
+---------------------------------------------------------------------------
+
+#### For each destination, compute the total minutes of delay.
+
+#TODO
+
+---------------------------------------------------------------------------
+
+\<ANS\>
+
+---------------------------------------------------------------------------
+
+#### (Not in the book) For each destination, normalize the air time of all flights by the minimum value for that destination
+
+#TODO
+
+---------------------------------------------------------------------------
+
+\<ANS\>
+
+---------------------------------------------------------------------------
+
+#### Plot data as a scatter; use **`geom_point`** 
+
+#TODO
+
+---------------------------------------------------------------------------
+
+\<ANS\>
+
+---------------------------------------------------------------------------
+
+#### Plot data as a 2d histogram; use **`geom_bin2d`**
+
+## 
+
+#TODO
+
+---------------------------------------------------------------------------
+
+\<ANS\>
+
+---------------------------------------------------------------------------
