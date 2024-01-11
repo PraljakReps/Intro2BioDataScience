@@ -1,0 +1,234 @@
+---
+title: "Chatper_5_from_Wickham"
+format: html
+editor: visual
+---
+
+# Chapter 5: Data Transformer 
+
+notebook will teach you how to transform your data using the dplyr package and a new dataset departing NYC in 2013.
+
+### Load packages...
+
+```{r}
+
+library(nycflights13)
+library(tidyverse)
+
+```
+
+### EDA
+
+```{r}
+
+flights
+```
+
+#### 
+
+### dplyr basics
+
+five key dplyr functions that allows for solving data manipulation problems.
+
+-   `filter()` : pick observations by their values
+
+-   `arrange()` : reorder the rows
+
+-   `select()` : pick variables by their names
+
+-   `mutate()` : create new variables with functions of existing variables
+
+-   `summarise()` : collapse many values down to a single summary
+
+Other functions outside of dplyr
+
+-   `group_by()` : changes the scope for each function from operating on the entire dataset to operating on it group-by-group
+
+## 5.2 Filter rows with filter()
+
+```{r}
+
+filter(flights, month == 1 & day == 1)
+```
+
+```{r}
+
+jan1 <- filter(flights, month == 1 & day == 1)
+dec25 <- filter(flights, month == 12 & day == 25)
+```
+
+#### Flight on New Years day.
+
+```{r}
+jan1
+```
+
+### Flights on Xmas
+
+```{r}
+dec25
+```
+
+## 5.2.1 Comparisons
+
+```{r}
+
+near(sqrt(2) ^ 2, 2)
+```
+
+## 5.2.2 Logical Operators
+
+```{r}
+
+filter(flights, month==11 | month==12) # OR operation
+```
+
+`x%in% y` : select every row where x is one of the values in y.
+
+`c(num_1, num_2)` : concatenate/combine is the 'c' function. Creates a vector containing its arguments.
+
+```{r}
+nov_dec <- filter(flights, month %in% c(11, 12))
+nov_dec
+```
+
+De Morgan's law
+
+```{r}
+filter(flights, !(arr_delay > 120 | dep_delay > 120))
+
+```
+
+```{r}
+filter(flights, arr_delay <= 120, dep_delay <= 120)
+
+```
+
+### 5.2.3 Missing values
+
+`is.na()` :if you want to know if values are missing.
+
+```{r}
+
+x <- NA
+is.na(x)
+x
+y <- 5
+is.na(y)
+```
+
+```{r}
+
+df <- tibble(x=c(1,NA,3))
+df
+filter(df, x > 1)
+filter(df, is.na(x) | x > 1)
+```
+
+## 5.3.  Arrange rows with `arrange()` 
+
+```{r}
+
+arrange(flights, year, month, day)
+```
+
+```{r}
+
+arrange(flights, desc(dep_delay))
+```
+
+missing values are sorted at the end
+
+```{r}
+
+df <- tibble(x = c(5,2,NA))
+df
+
+arrange(df, x)
+
+df <- tibble(x=c(5,2,NA)) |>
+  arrange(desc(x))
+df
+```
+
+## 5.4 Select columns with select()
+
+`select()` : allows you to rapidly zoom in on a useful subset using operations based on the names of the variables.
+
+```{r}
+select(flights, year, month, day)
+
+select(flights, year:day)
+
+select(flights, -(year:day))
+
+```
+
+Number of helper functions you can use within `select()` :
+
+-   `starts_with("abc")` : matches names that being with "abc"
+
+-   `ends_with("xyz")` : matches names that end with "xyz"
+
+-   `contains("ijk")` : matches names that contain "ijk"
+
+-   `matches("(.)\\1")` : selects variables that match a reg. expression
+
+-   `num_range("x", 1:3)` : matches x1, x2, and x3
+
+```{r}
+rename(flights, tail_num=tailnum)
+```
+
+```{r}
+select(flights, time_hour, air_time, everything())
+```
+
+## 
+
+## 5.5 Add new variables with `mutate()` 
+
+```{r}
+flights_sml <- select(
+  flights,
+                      year:day,
+                      ends_with("delay"),
+                      distance,
+                      air_time
+)
+
+flights_sml
+
+mutate(
+  flights_sml,
+  gain=dep_delay - arr_delay,
+  speed=distance / air_time * 60
+)
+
+mutate(
+  flights_sml,
+  gain=dep_delay - arr_delay,
+  hours=air_time / 60,
+  gain_per_hour=gain / hours
+)
+
+# if you only want to keep the new variables, use transmute()
+
+transmute(
+  flights,
+  gain=dep_delay - arr_delay,
+  hours=air_time / 60,
+  gain_per_hour=gain / hours
+)
+```
+
+## 5.6 Grouped summaries with `summarise()`
+
+```{r}
+summarize(
+  flights,
+  delay=mean(dep_delay, na.rm=TRUE)
+)
+```
+
+### 
