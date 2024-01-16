@@ -4,7 +4,7 @@ format: html
 editor: visual
 ---
 
-# Chapter 5: Data Transformer 
+# Chapter 5: Data Transformer
 
 notebook will teach you how to transform your data using the dplyr package and a new dataset departing NYC in 2013.
 
@@ -125,7 +125,7 @@ filter(df, x > 1)
 filter(df, is.na(x) | x > 1)
 ```
 
-## 5.3.  Arrange rows with `arrange()` 
+## 5.3. Arrange rows with `arrange()`
 
 ```{r}
 
@@ -186,7 +186,7 @@ select(flights, time_hour, air_time, everything())
 
 ## 
 
-## 5.5 Add new variables with `mutate()` 
+## 5.5 Add new variables with `mutate()`
 
 ```{r}
 flights_sml <- select(
@@ -231,4 +231,1355 @@ summarize(
 )
 ```
 
-### 
+```{r}
+
+# with arrange
+
+by_day_arrange <- arrange(flights, year, month, day)
+by_day_arange
+summarize(by_day_arrange, delay = mean(dep_delay, na.rm=TRUE))
+
+
+# with group_by
+
+by_day <- group_by(flights, year, month, day)
+by_day
+by_day_summary <- summarize(by_day, delay = mean(dep_delay, na.rm = TRUE))
+by_day_summary
+
+```
+
+# 
+
+# Plot data after summary
+
+```{r}
+
+by_dest <- group_by(flights, dest)
+delay <- summarise(by_dest,
+  count = n(),
+  dist = mean(distance, na.rm = TRUE),
+  delay = mean(arr_delay, na.rm = TRUE)
+)
+
+# Why Is the 'HNL" string being removed?
+delay <- filter(delay, count > 20, dest != "HNL")
+
+
+# Can you explain any trends within the data? 
+ggplot(data = delay, mapping = aes(x = dist, y = delay)) +
+  geom_point(aes(size = count), alpha = 1/3) +
+  geom_smooth(se = FALSE)
+#> `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+```
+
+---
+title: "Chatper_5_from_Wickham"
+format: html
+editor: visual
+---
+
+# Chapter 5: Data Transformer
+
+notebook will teach you how to transform your data using the dplyr package and a new dataset departing NYC in 2013.
+
+### Load packages...
+
+```{r}
+
+library(nycflights13)
+library(tidyverse)
+
+```
+
+### EDA
+
+```{r}
+
+flights
+```
+
+#### 
+
+### dplyr basics
+
+five key dplyr functions that allows for solving data manipulation problems.
+
+-   `filter()` : pick observations by their values
+
+-   `arrange()` : reorder the rows
+
+-   `select()` : pick variables by their names
+
+-   `mutate()` : create new variables with functions of existing variables
+
+-   `summarise()` : collapse many values down to a single summary
+
+Other functions outside of dplyr
+
+-   `group_by()` : changes the scope for each function from operating on the entire dataset to operating on it group-by-group
+
+## 5.2 Filter rows with filter()
+
+```{r}
+
+filter(flights, month == 1 & day == 1)
+```
+
+```{r}
+
+jan1 <- filter(flights, month == 1 & day == 1)
+dec25 <- filter(flights, month == 12 & day == 25)
+```
+
+#### Flight on New Years day.
+
+```{r}
+jan1
+```
+
+### Flights on Xmas
+
+```{r}
+dec25
+```
+
+## 5.2.1 Comparisons
+
+```{r}
+
+near(sqrt(2) ^ 2, 2)
+```
+
+## 5.2.2 Logical Operators
+
+```{r}
+
+filter(flights, month==11 | month==12) # OR operation
+```
+
+`x%in% y` : select every row where x is one of the values in y.
+
+`c(num_1, num_2)` : concatenate/combine is the 'c' function. Creates a vector containing its arguments.
+
+```{r}
+nov_dec <- filter(flights, month %in% c(11, 12))
+nov_dec
+```
+
+De Morgan's law
+
+```{r}
+filter(flights, !(arr_delay > 120 | dep_delay > 120))
+
+```
+
+```{r}
+filter(flights, arr_delay <= 120, dep_delay <= 120)
+
+```
+
+### 5.2.3 Missing values
+
+`is.na()` :if you want to know if values are missing.
+
+```{r}
+
+x <- NA
+is.na(x)
+x
+y <- 5
+is.na(y)
+```
+
+```{r}
+
+df <- tibble(x=c(1,NA,3))
+df
+filter(df, x > 1)
+filter(df, is.na(x) | x > 1)
+```
+
+## 5.3. Arrange rows with `arrange()`
+
+```{r}
+
+arrange(flights, year, month, day)
+```
+
+```{r}
+
+arrange(flights, desc(dep_delay))
+```
+
+missing values are sorted at the end
+
+```{r}
+
+df <- tibble(x = c(5,2,NA))
+df
+
+arrange(df, x)
+
+df <- tibble(x=c(5,2,NA)) |>
+  arrange(desc(x))
+df
+```
+
+## 5.4 Select columns with select()
+
+`select()` : allows you to rapidly zoom in on a useful subset using operations based on the names of the variables.
+
+```{r}
+select(flights, year, month, day)
+
+select(flights, year:day)
+
+select(flights, -(year:day))
+
+```
+
+Number of helper functions you can use within `select()` :
+
+-   `starts_with("abc")` : matches names that being with "abc"
+
+-   `ends_with("xyz")` : matches names that end with "xyz"
+
+-   `contains("ijk")` : matches names that contain "ijk"
+
+-   `matches("(.)\\1")` : selects variables that match a reg. expression
+
+-   `num_range("x", 1:3)` : matches x1, x2, and x3
+
+```{r}
+rename(flights, tail_num=tailnum)
+```
+
+```{r}
+select(flights, time_hour, air_time, everything())
+```
+
+## 
+
+## 5.5 Add new variables with `mutate()`
+
+```{r}
+flights_sml <- select(
+  flights,
+                      year:day,
+                      ends_with("delay"),
+                      distance,
+                      air_time
+)
+
+flights_sml
+
+mutate(
+  flights_sml,
+  gain=dep_delay - arr_delay,
+  speed=distance / air_time * 60
+)
+
+mutate(
+  flights_sml,
+  gain=dep_delay - arr_delay,
+  hours=air_time / 60,
+  gain_per_hour=gain / hours
+)
+
+# if you only want to keep the new variables, use transmute()
+
+transmute(
+  flights,
+  gain=dep_delay - arr_delay,
+  hours=air_time / 60,
+  gain_per_hour=gain / hours
+)
+```
+
+## 5.6 Grouped summaries with `summarise()`
+
+```{r}
+summarize(
+  flights,
+  delay=mean(dep_delay, na.rm=TRUE)
+)
+```
+
+```{r}
+
+# with arrange
+
+by_day_arrange <- arrange(flights, year, month, day)
+by_day_arange
+summarize(by_day_arrange, delay = mean(dep_delay, na.rm=TRUE))
+
+
+# with group_by
+
+by_day <- group_by(flights, year, month, day)
+by_day
+by_day_summary <- summarize(by_day, delay = mean(dep_delay, na.rm = TRUE))
+by_day_summary
+
+```
+
+# 
+
+# Plot data after summary
+
+```{r}
+
+by_dest <- group_by(flights, dest)
+delay <- summarise(by_dest,
+  count = n(),
+  dist = mean(distance, na.rm = TRUE),
+  delay = mean(arr_delay, na.rm = TRUE)
+)
+
+# Why Is the 'HNL" string being removed?
+delay <- filter(delay, count > 20, dest != "HNL")
+
+
+# Can you explain any trends within the data? 
+ggplot(data = delay, mapping = aes(x = dist, y = delay)) +
+  geom_point(aes(size = count), alpha = 1/3) +
+  geom_smooth(se = FALSE)
+#> `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+```
+
+Q: What is the filtering function doing? Also, why are we ignoring the "HNL" destination?
+
+Q: What is your interpretation of the plot? Can you describe the trend?
+
+Code below: Piping practice.
+
+```{r}
+
+
+delays_NOpipe <- filter(
+    summarize(
+      group_by(
+        flights, dest), count = n(), dist = mean(distance, na.rm=TRUE)
+      ), count > 20, dest != 'HNL'
+  )
+
+delays_NOpipe
+```
+
+Writing functions with pipes..
+
+```{r}
+
+delays_pipe <- flights |> 
+  group_by(dest) |>
+  summarise(
+    count = n(),
+    dist = mean(distance, na.rm = TRUE),
+    delay = mean(arr_delay, na.rm = TRUE)
+  ) |>
+  filter(count > 20, dest != "HNL")
+
+delays_pipe
+
+```
+
+#### Dealing with missing values
+
+```{r}
+flights |>
+  group_by(year, month, day) |>
+  summarize(mean = mean(dep_delay))
+```
+
+What is the filtering function doing? Also, why are we ignoring the "HNL" destination?
+
+Code below: Piping practice.
+
+```{r}
+
+
+delays_NOpipe <- filter(
+    summarize(
+      group_by(
+        flights, dest), count = n(), dist = mean(distance, na.rm=TRUE)
+      ), count > 20, dest != 'HNL'
+  )
+
+delays_NOpipe
+```
+
+Writing functions with pipes..
+
+```{r}
+
+delays_pipe <- flights |> 
+  group_by(dest) |>
+  summarise(
+    count = n(),
+    dist = mean(distance, na.rm = TRUE),
+    delay = mean(arr_delay, na.rm = TRUE)
+  ) |>
+  filter(count > 20, dest != "HNL")
+
+delays_pipe
+
+```
+
+#### Dealing with missing values
+
+```{r}
+flights |>
+  group_by(year, month, day) |>
+  summarize(mean = mean(dep_delay))
+```
+
+```{r}
+
+flights |>
+  group_by(year, month, day) |>
+  summarise(mean = mean(dep_delay, na.rm = TRUE))
+```
+
+### Missing values have qualitative importance!
+
+For example, `NaN` can represent "canceled" flights.
+
+```{r}
+
+not_cancelled <- flights |>
+  filter(!is.na(dep_delay), !is.na(arr_delay))
+
+not_cancelled |>
+  group_by(year, month, day) |>
+  summarise(mean = mean(dep_delay))
+```
+
+## 5.6.3. Counts
+
+```{r}
+delays <- not_cancelled |>
+  group_by(tailnum) |>
+  summarise(
+    delay = mean(arr_delay)
+  )
+
+ggplot(data = delays, mapping = aes(x = delay)) + 
+  geom_freqpoly(binwidth = 10)
+```
+
+```{r}
+delays <- not_cancelled |>
+  group_by(tailnum) |>
+  summarise(
+    delay = mean(arr_delay, na.rm = TRUE),
+    n = n()
+  )
+
+ggplot(data = delays, mapping = aes(x = n, y = delay)) + 
+  geom_point(alpha = 1/10)
+```
+
+```{r}
+
+delays |> 
+  filter(n > 25) |> 
+  ggplot(mapping = aes(x = n, y = delay)) + 
+    geom_point(alpha = 1/10)
+```
+
+---
+title: "Chatper_5_from_Wickham"
+format: html
+editor: visual
+---
+
+# Chapter 5: Data Transformer
+
+notebook will teach you how to transform your data using the dplyr package and a new dataset departing NYC in 2013.
+
+### Load packages...
+
+```{r}
+
+library(nycflights13)
+library(tidyverse)
+
+```
+
+### EDA
+
+```{r}
+
+flights
+```
+
+#### 
+
+### dplyr basics
+
+five key dplyr functions that allows for solving data manipulation problems.
+
+-   `filter()` : pick observations by their values
+
+-   `arrange()` : reorder the rows
+
+-   `select()` : pick variables by their names
+
+-   `mutate()` : create new variables with functions of existing variables
+
+-   `summarise()` : collapse many values down to a single summary
+
+Other functions outside of dplyr
+
+-   `group_by()` : changes the scope for each function from operating on the entire dataset to operating on it group-by-group
+
+## 5.2 Filter rows with filter()
+
+```{r}
+
+filter(flights, month == 1 & day == 1)
+```
+
+```{r}
+
+jan1 <- filter(flights, month == 1 & day == 1)
+dec25 <- filter(flights, month == 12 & day == 25)
+```
+
+#### Flight on New Years day.
+
+```{r}
+jan1
+```
+
+### Flights on Xmas
+
+```{r}
+dec25
+```
+
+## 5.2.1 Comparisons
+
+```{r}
+
+near(sqrt(2) ^ 2, 2)
+```
+
+## 5.2.2 Logical Operators
+
+```{r}
+
+filter(flights, month==11 | month==12) # OR operation
+```
+
+`x%in% y` : select every row where x is one of the values in y.
+
+`c(num_1, num_2)` : concatenate/combine is the 'c' function. Creates a vector containing its arguments.
+
+```{r}
+nov_dec <- filter(flights, month %in% c(11, 12))
+nov_dec
+```
+
+De Morgan's law
+
+```{r}
+filter(flights, !(arr_delay > 120 | dep_delay > 120))
+
+```
+
+```{r}
+filter(flights, arr_delay <= 120, dep_delay <= 120)
+
+```
+
+### 5.2.3 Missing values
+
+`is.na()` :if you want to know if values are missing.
+
+```{r}
+
+x <- NA
+is.na(x)
+x
+y <- 5
+is.na(y)
+```
+
+```{r}
+
+df <- tibble(x=c(1,NA,3))
+df
+filter(df, x > 1)
+filter(df, is.na(x) | x > 1)
+```
+
+## 5.3. Arrange rows with `arrange()`
+
+```{r}
+
+arrange(flights, year, month, day)
+```
+
+```{r}
+
+arrange(flights, desc(dep_delay))
+```
+
+missing values are sorted at the end
+
+```{r}
+
+df <- tibble(x = c(5,2,NA))
+df
+
+arrange(df, x)
+
+df <- tibble(x=c(5,2,NA)) |>
+  arrange(desc(x))
+df
+```
+
+## 5.4 Select columns with select()
+
+`select()` : allows you to rapidly zoom in on a useful subset using operations based on the names of the variables.
+
+```{r}
+select(flights, year, month, day)
+
+select(flights, year:day)
+
+select(flights, -(year:day))
+
+```
+
+Number of helper functions you can use within `select()` :
+
+-   `starts_with("abc")` : matches names that being with "abc"
+
+-   `ends_with("xyz")` : matches names that end with "xyz"
+
+-   `contains("ijk")` : matches names that contain "ijk"
+
+-   `matches("(.)\\1")` : selects variables that match a reg. expression
+
+-   `num_range("x", 1:3)` : matches x1, x2, and x3
+
+```{r}
+rename(flights, tail_num=tailnum)
+```
+
+```{r}
+select(flights, time_hour, air_time, everything())
+```
+
+## 
+
+## 5.5 Add new variables with `mutate()`
+
+```{r}
+flights_sml <- select(
+  flights,
+                      year:day,
+                      ends_with("delay"),
+                      distance,
+                      air_time
+)
+
+flights_sml
+
+mutate(
+  flights_sml,
+  gain=dep_delay - arr_delay,
+  speed=distance / air_time * 60
+)
+
+mutate(
+  flights_sml,
+  gain=dep_delay - arr_delay,
+  hours=air_time / 60,
+  gain_per_hour=gain / hours
+)
+
+# if you only want to keep the new variables, use transmute()
+
+transmute(
+  flights,
+  gain=dep_delay - arr_delay,
+  hours=air_time / 60,
+  gain_per_hour=gain / hours
+)
+```
+
+## 5.6 Grouped summaries with `summarise()`
+
+```{r}
+summarize(
+  flights,
+  delay=mean(dep_delay, na.rm=TRUE)
+)
+```
+
+```{r}
+
+# with arrange
+
+by_day_arrange <- arrange(flights, year, month, day)
+by_day_arange
+summarize(by_day_arrange, delay = mean(dep_delay, na.rm=TRUE))
+
+
+# with group_by
+
+by_day <- group_by(flights, year, month, day)
+by_day
+by_day_summary <- summarize(by_day, delay = mean(dep_delay, na.rm = TRUE))
+by_day_summary
+
+```
+
+# 
+
+# Plot data after summary
+
+```{r}
+
+by_dest <- group_by(flights, dest)
+delay <- summarise(by_dest,
+  count = n(),
+  dist = mean(distance, na.rm = TRUE),
+  delay = mean(arr_delay, na.rm = TRUE)
+)
+
+# Why Is the 'HNL" string being removed?
+delay <- filter(delay, count > 20, dest != "HNL")
+
+
+# Can you explain any trends within the data? 
+ggplot(data = delay, mapping = aes(x = dist, y = delay)) +
+  geom_point(aes(size = count), alpha = 1/3) +
+  geom_smooth(se = FALSE)
+#> `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+```
+
+---
+title: "Chatper_5_from_Wickham"
+format: html
+editor: visual
+---
+
+# Chapter 5: Data Transformer
+
+notebook will teach you how to transform your data using the dplyr package and a new dataset departing NYC in 2013.
+
+### Load packages...
+
+```{r}
+
+library(nycflights13)
+library(tidyverse)
+
+```
+
+### EDA
+
+```{r}
+
+flights
+```
+
+#### 
+
+### dplyr basics
+
+five key dplyr functions that allows for solving data manipulation problems.
+
+-   `filter()` : pick observations by their values
+
+-   `arrange()` : reorder the rows
+
+-   `select()` : pick variables by their names
+
+-   `mutate()` : create new variables with functions of existing variables
+
+-   `summarise()` : collapse many values down to a single summary
+
+Other functions outside of dplyr
+
+-   `group_by()` : changes the scope for each function from operating on the entire dataset to operating on it group-by-group
+
+## 5.2 Filter rows with filter()
+
+```{r}
+
+filter(flights, month == 1 & day == 1)
+```
+
+```{r}
+
+jan1 <- filter(flights, month == 1 & day == 1)
+dec25 <- filter(flights, month == 12 & day == 25)
+```
+
+#### Flight on New Years day.
+
+```{r}
+jan1
+```
+
+### Flights on Xmas
+
+```{r}
+dec25
+```
+
+## 5.2.1 Comparisons
+
+```{r}
+
+near(sqrt(2) ^ 2, 2)
+```
+
+## 5.2.2 Logical Operators
+
+```{r}
+
+filter(flights, month==11 | month==12) # OR operation
+```
+
+`x%in% y` : select every row where x is one of the values in y.
+
+`c(num_1, num_2)` : concatenate/combine is the 'c' function. Creates a vector containing its arguments.
+
+```{r}
+nov_dec <- filter(flights, month %in% c(11, 12))
+nov_dec
+```
+
+De Morgan's law
+
+```{r}
+filter(flights, !(arr_delay > 120 | dep_delay > 120))
+
+```
+
+```{r}
+filter(flights, arr_delay <= 120, dep_delay <= 120)
+
+```
+
+### 5.2.3 Missing values
+
+`is.na()` :if you want to know if values are missing.
+
+```{r}
+
+x <- NA
+is.na(x)
+x
+y <- 5
+is.na(y)
+```
+
+```{r}
+
+df <- tibble(x=c(1,NA,3))
+df
+filter(df, x > 1)
+filter(df, is.na(x) | x > 1)
+```
+
+## 5.3. Arrange rows with `arrange()`
+
+```{r}
+
+arrange(flights, year, month, day)
+```
+
+```{r}
+
+arrange(flights, desc(dep_delay))
+```
+
+missing values are sorted at the end
+
+```{r}
+
+df <- tibble(x = c(5,2,NA))
+df
+
+arrange(df, x)
+
+df <- tibble(x=c(5,2,NA)) |>
+  arrange(desc(x))
+df
+```
+
+## 5.4 Select columns with select()
+
+`select()` : allows you to rapidly zoom in on a useful subset using operations based on the names of the variables.
+
+```{r}
+select(flights, year, month, day)
+
+select(flights, year:day)
+
+select(flights, -(year:day))
+
+```
+
+Number of helper functions you can use within `select()` :
+
+-   `starts_with("abc")` : matches names that being with "abc"
+
+-   `ends_with("xyz")` : matches names that end with "xyz"
+
+-   `contains("ijk")` : matches names that contain "ijk"
+
+-   `matches("(.)\\1")` : selects variables that match a reg. expression
+
+-   `num_range("x", 1:3)` : matches x1, x2, and x3
+
+```{r}
+rename(flights, tail_num=tailnum)
+```
+
+```{r}
+select(flights, time_hour, air_time, everything())
+```
+
+## 
+
+## 5.5 Add new variables with `mutate()`
+
+```{r}
+flights_sml <- select(
+  flights,
+                      year:day,
+                      ends_with("delay"),
+                      distance,
+                      air_time
+)
+
+flights_sml
+
+mutate(
+  flights_sml,
+  gain=dep_delay - arr_delay,
+  speed=distance / air_time * 60
+)
+
+mutate(
+  flights_sml,
+  gain=dep_delay - arr_delay,
+  hours=air_time / 60,
+  gain_per_hour=gain / hours
+)
+
+# if you only want to keep the new variables, use transmute()
+
+transmute(
+  flights,
+  gain=dep_delay - arr_delay,
+  hours=air_time / 60,
+  gain_per_hour=gain / hours
+)
+```
+
+## 5.6 Grouped summaries with `summarise()`
+
+```{r}
+summarize(
+  flights,
+  delay=mean(dep_delay, na.rm=TRUE)
+)
+```
+
+```{r}
+
+# with arrange
+
+by_day_arrange <- arrange(flights, year, month, day)
+by_day_arange
+summarize(by_day_arrange, delay = mean(dep_delay, na.rm=TRUE))
+
+
+# with group_by
+
+by_day <- group_by(flights, year, month, day)
+by_day
+by_day_summary <- summarize(by_day, delay = mean(dep_delay, na.rm = TRUE))
+by_day_summary
+
+```
+
+# 
+
+# Plot data after summary
+
+```{r}
+
+by_dest <- group_by(flights, dest)
+delay <- summarise(by_dest,
+  count = n(),
+  dist = mean(distance, na.rm = TRUE),
+  delay = mean(arr_delay, na.rm = TRUE)
+)
+
+# Why Is the 'HNL" string being removed?
+delay <- filter(delay, count > 20, dest != "HNL")
+
+
+# Can you explain any trends within the data? 
+ggplot(data = delay, mapping = aes(x = dist, y = delay)) +
+  geom_point(aes(size = count), alpha = 1/3) +
+  geom_smooth(se = FALSE)
+#> `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+```
+
+Q: What is the filtering function doing? Also, why are we ignoring the "HNL" destination?
+
+Q: What is your interpretation of the plot? Can you describe the trend?
+
+Code below: Piping practice.
+
+```{r}
+
+
+delays_NOpipe <- filter(
+    summarize(
+      group_by(
+        flights, dest), count = n(), dist = mean(distance, na.rm=TRUE)
+      ), count > 20, dest != 'HNL'
+  )
+
+delays_NOpipe
+```
+
+Writing functions with pipes..
+
+```{r}
+
+delays_pipe <- flights |> 
+  group_by(dest) |>
+  summarise(
+    count = n(),
+    dist = mean(distance, na.rm = TRUE),
+    delay = mean(arr_delay, na.rm = TRUE)
+  ) |>
+  filter(count > 20, dest != "HNL")
+
+delays_pipe
+
+```
+
+#### Dealing with missing values
+
+```{r}
+flights |>
+  group_by(year, month, day) |>
+  summarize(mean = mean(dep_delay))
+```
+
+What is the filtering function doing? Also, why are we ignoring the "HNL" destination?
+
+Code below: Piping practice.
+
+```{r}
+
+
+delays_NOpipe <- filter(
+    summarize(
+      group_by(
+        flights, dest), count = n(), dist = mean(distance, na.rm=TRUE)
+      ), count > 20, dest != 'HNL'
+  )
+
+delays_NOpipe
+```
+
+Writing functions with pipes..
+
+```{r}
+
+delays_pipe <- flights |> 
+  group_by(dest) |>
+  summarise(
+    count = n(),
+    dist = mean(distance, na.rm = TRUE),
+    delay = mean(arr_delay, na.rm = TRUE)
+  ) |>
+  filter(count > 20, dest != "HNL")
+
+delays_pipe
+
+```
+
+#### Dealing with missing values
+
+```{r}
+flights |>
+  group_by(year, month, day) |>
+  summarize(mean = mean(dep_delay))
+```
+
+```{r}
+
+flights |>
+  group_by(year, month, day) |>
+  summarise(mean = mean(dep_delay, na.rm = TRUE))
+```
+
+### Missing values have qualitative importance!
+
+For example, `NaN` can represent "canceled" flights.
+
+```{r}
+
+not_cancelled <- flights |>
+  filter(!is.na(dep_delay), !is.na(arr_delay))
+
+not_cancelled |>
+  group_by(year, month, day) |>
+  summarise(mean = mean(dep_delay))
+```
+
+## 5.6.3. Counts
+
+```{r}
+delays <- not_cancelled |>
+  group_by(tailnum) |>
+  summarise(
+    delay = mean(arr_delay)
+  )
+
+ggplot(data = delays, mapping = aes(x = delay)) + 
+  geom_freqpoly(binwidth = 10)
+```
+
+```{r}
+delays <- not_cancelled |>
+  group_by(tailnum) |>
+  summarise(
+    delay = mean(arr_delay, na.rm = TRUE),
+    n = n()
+  )
+
+ggplot(data = delays, mapping = aes(x = n, y = delay)) + 
+  geom_point(alpha = 1/10)
+```
+
+```{r}
+
+delays |> 
+  filter(n > 25) |> 
+  ggplot(mapping = aes(x = n, y = delay)) + 
+    geom_point(alpha = 1/10)
+```
+
+\
+Q: What is your interpretation of the above graph? Do you see a relation between between `delay` versus `n` (number of flights)? What do you expect happens if n -\> infinity?
+
+#### Compute batting average
+
+```{r}
+library(Lahman)
+```
+
+batting average –\> `ba`
+
+number of opportunities to hit the ball `ab`
+
+```{r}
+# Convert to a tibble so it prints nicely
+batting <- as_tibble(Lahman::Batting)
+
+batters <- batting |>
+  group_by(playerID) |>
+  summarise(
+    ba = sum(H, na.rm = TRUE) / sum(AB, na.rm = TRUE),
+    ab = sum(AB, na.rm = TRUE)
+  )
+
+batters |>
+  filter(ab > 100) |> 
+  ggplot(mapping = aes(x = ab, y = ba)) +
+    geom_point() + 
+    geom_smooth(se = FALSE)
+#> `geom_smooth()` using method = 'gam' and formula = 'y ~ s(x, bs = "cs")'
+```
+
+Q: Is the correlation positive or negative between `ab` versus `ba` ?\
+
+Q: Based on your answer from above, why is that the case? Think about it in terms of a baseball team and coaching decision.
+
+```{r}
+batters
+```
+
+```{r}
+
+# let's see if we can rank the best betters based on the batting average!
+
+batters |>
+  arrange(desc(ba))
+```
+
+Q: Interestingly, the top performing batters only have batting attempts equal to 1. If the bat so well, why aren't they batting more?
+
+#### 5.6.4 Useful summary functions
+
+We can do subsetting which is the following `arr_delay[arr_delay > 0]`. Here is an example of this in action.
+
+```{r}
+not_cancelled |> 
+  group_by(year, month, day) |> 
+  summarise(
+    avg_delay1 = mean(arr_delay),
+    avg_delay2 = mean(arr_delay[arr_delay > 0]) # the average positive delay
+  )
+```
+
+Let's compute the spread for the distance values.
+
+```{r}
+not_cancelled |>
+  group_by(dest) |> 
+  summarise(distance_sd = sd(distance)) |>
+  arrange(desc(distance_sd))
+```
+
+Q Why is distance to some destinations more variable than to others?
+
+Let's compute the rank departure time.
+
+```{r}
+
+# When do the first and last flights leave each day?
+not_cancelled |> 
+  group_by(year, month, day) |>
+  summarise(
+    first = min(dep_time),
+    last = max(dep_time)
+  )
+
+```
+
+Measures of position
+
+```{r}
+not_cancelled |> 
+  group_by(year, month, day) |> 
+  summarise(
+    first_dep = first(dep_time), 
+    last_dep = last(dep_time)
+  )
+```
+
+Filter on ranks
+
+```{r}
+not_cancelled |> 
+  group_by(year, month, day) |>
+  mutate(r = min_rank(desc(dep_time))) |> 
+  filter(r %in% range(r))
+```
+
+```{r}
+# Which destinations have the most carriers?
+not_cancelled |>
+  group_by(dest) |>
+  summarise(carriers = n_distinct(carrier)) |>
+  arrange(desc(carriers))
+
+```
+
+Q: Which destinations have the most carriers?
+
+Q: What is the average number of carriers across all destinations? What is the spread?
+
+shortcut for counts (helper function)
+
+```{r}
+
+not_cancelled |> 
+  count(dest)
+```
+
+Use logical and count statements with summarize()
+
+```{r}
+# How many flights left before 5am? (these usually indicate delayed
+# flights from the previous day)
+not_cancelled |>
+  group_by(year, month, day) |> 
+  summarise(n_early = sum(dep_time < 500))
+```
+
+Use logic+summarize for delays
+
+```{r}
+# What proportion of flights are delayed by more than an hour?
+not_cancelled |> 
+  group_by(year, month, day) |>
+  summarise(hour_prop = mean(arr_delay > 60))
+```
+
+# 5.6.5. Grouping by multiple variables
+
+```{r}
+
+daily <- group_by(flights, year, month, day)
+(per_day   <- summarise(daily, flights = n()))
+
+(per_month <- summarise(per_day, flights = sum(flights)))
+```
+
+### 5.6.6 Ungrouping 
+
+```{r}
+daily |> 
+  ungroup() |>             # no longer grouped by date
+  summarise(flights = n())  # all flights
+```
+
+### 5.7 **Grouped mutates (and filters)**
+
+Grouping is most useful with summarize()! However, we can use this function with mutate(), transmutate(), and filter().
+
+-   Find the worst members of each group:
+
+```{r}
+
+flights_sml <- select(flights, 
+  year:day, 
+  ends_with("delay"), 
+  distance, 
+  air_time
+)
+
+
+flights_sml |>
+  group_by(year, month, day) |>
+  filter(rank(desc(arr_delay)) < 10)
+```
+
+-   Find all groups bigger than a threshold:
+
+```{r}
+
+popular_dests <- flights |> 
+  group_by(dest) |> 
+  filter(n() > 365)
+popular_dests
+```
+
+-   Standardise to compute per group metrics:
+
+```{r}
+popular_dests |> 
+  filter(arr_delay > 0) |> 
+  mutate(prop_delay = arr_delay / sum(arr_delay)) |>  
+  select(year:day, dest, arr_delay, prop_delay)
+```
