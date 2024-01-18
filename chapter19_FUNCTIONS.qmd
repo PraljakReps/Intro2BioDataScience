@@ -1,0 +1,656 @@
+---
+title: "Functions"
+format: html
+editor: visual
+---
+
+# Chapter 19: Functions
+
+### **Prerequisites**
+
+Q: Why use functions?
+
+A: when we need to copy and paste code a lot of times...
+
+```{r}
+
+# creates an temp dataframe
+df <- tibble::tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+
+df 
+
+df$a <- (df$a - min(df$a, na.rm = TRUE)) / 
+  (max(df$a, na.rm = TRUE) - min(df$a, na.rm = TRUE))
+df # after the first update 
+
+df$b <- (df$b - min(df$b, na.rm = TRUE)) / 
+  (max(df$b, na.rm = TRUE) - min(df$a, na.rm = TRUE))
+df # second update
+
+df$c <- (df$c - min(df$c, na.rm = TRUE)) / 
+  (max(df$c, na.rm = TRUE) - min(df$c, na.rm = TRUE))
+df # third update
+
+df$d <- (df$d - min(df$d, na.rm = TRUE)) / 
+  (max(df$d, na.rm = TRUE) - min(df$d, na.rm = TRUE))
+df # fourth update
+
+```
+
+#### Lets write our own function instead of the above code... 
+
+How many inputs does it have?
+
+```{r}
+
+(df$a - min(df$a, na.rm = TRUE)) /
+  (max(df$a, na.rm = TRUE) - min(df$a, na.rm = TRUE))
+
+```
+
+There is only one inputs, and it is `df$a` or any arbitrary column `a, b, c, etc`
+
+#### Let's replace this step below with a given function by R
+
+```{r}
+
+# let's x as the column a 
+x <- df$a
+
+# lets normalize the data
+(x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+```
+
+Range in R returns a vector that contains the minimum and maximum values of the given argument — known in statistics as a *range*
+
+```{r}
+
+# let's retrieve the range
+
+rng <- range(x, na.rm = TRUE)
+
+# let's normalize the data 
+
+(x - rng[1]) / (rng[2] - rng[1])
+```
+
+#### Let's write our own function:
+
+```{r}
+
+# here is our function
+rescale01 <- function(x) {
+  # copmute the range
+  rng <- range(x, na.rm = TRUE)
+  # normalize the data
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+
+# let's normalize this list 
+rescale01(c(0, 5, 10))
+```
+
+```{r}
+rescale01(c(-10, 0, 10))
+#> [1] 0.0 0.5 1.0
+rescale01(c(1, 2, 3, NA, 5))
+#> [1] 0.00 0.25 0.50   NA 1.00
+```
+
+```{r}
+
+rescale01(x)
+```
+
+### How do we create a function? 
+
+Wickham et al. recommends the following:
+
+1.  We need to pick a name for the function.
+    -   What was the name of the function that we created earlier?
+2.  List the inputs (arguments) to the function inside `function`.
+    -   How many agruments did we have?
+3.  Place the important code in the body of the function.
+    -   How do we define the "body" of the function?
+
+#### Now we can simplify the last cell chunk: 
+
+```{r}
+
+df$a <- rescale01(df$a)
+df$b <- rescale01(df$b)
+df$c <- rescale01(df$c)
+df$d <- rescale01(df$d)
+
+```
+
+```{r}
+x <- c(1:10, Inf)
+rescale01(x)
+```
+
+```{r}
+
+rescale01 <- function(x) {
+  rng <- range(x, na.rm = TRUE, finite = TRUE)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+rescale01(x)
+```
+
+##### Q: Can you guys try this question? 
+
+Practice turning the following code snippets into functions. Think about what each function does. What would you call it? How many arguments does it need? Can you rewrite it to be more expressive or less duplicative?
+
+```{r}
+
+# use this x as a place holder... 
+x <- df$a
+```
+
+```{r}
+mean(is.na(x))
+
+x / sum(x, na.rm = TRUE)
+
+sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)
+```
+
+### 19.3 Functions are for humans and computers
+
+#### Things not to do...
+
+#### 
+
+#too short
+
+`f()`
+
+#Not a verb, or descriptive
+
+`my_aversome_function()`
+
+#Long, but clear
+
+`impute_missing()`
+
+`collapase_years()`
+
+```         
+# Never do this! 
+col_mins <- function(x, y) {}
+rowMaxes <- function(y, x) {}
+```
+
+```{r}
+
+# Good
+input_select()
+input_checkbox()
+input_text()
+
+# Not so good
+select_input()
+checkbox_input()
+text_input()
+```
+
+Quick Exercise:
+
+1.  Read the source code for each of the following three functions, puzzle out what they do, and then brainstorm better names.
+
+    ```         
+    f1 <- function(string, prefix) {
+      substr(string, 1, nchar(prefix)) == prefix
+    }
+    f2 <- function(x) {
+      if (length(x) <= 1) return(NULL)
+      x[-length(x)]
+    }
+    f3 <- function(x, y) {
+      rep(y, length.out = length(x))
+    }
+    ```
+
+### 19.4 Conditional execution
+
+#### Here is a popular conditional expression
+
+```{r}
+
+
+if (condition) {
+  # code executed when condition is TRUE
+} else {
+  # code executed when condition is FALSE
+}
+```
+
+# 
+
+#### Here is the example of this execution in practice
+
+```{r}
+
+has_name <- function(x) {
+  nms <- names(x)
+  if (is.null(nms)) {
+    rep(FALSE, length(x))
+  } else {
+    !is.na(nms) & nms != ""
+  }
+}
+```
+
+#### 19.4.1 Conditions
+
+The `condition` must evaluate to either `TRUE` or `FALSE`
+
+```{r}
+
+# example 
+
+if (c(TRUE, FALSE)) {}
+#> Error in if (c(TRUE, FALSE)) {: the condition has length > 1
+
+if (NA) {}
+#> Error in if (NA) {: missing value where TRUE/FALSE needed
+```
+
+```{r}
+
+# trivial
+identical(0, 0)
+
+# bug
+identical(0L, 0)
+
+# math 
+identical(30*0, 0)
+```
+
+### **19.4.2 Multiple conditions**
+
+#### 
+
+multiple if statements.
+
+Q: Can someone explain the difference between the three `if` statements? E.g. what is the order?
+
+```{r}
+
+if (this) {
+  # do that
+} else if (that) {
+  # do something else
+} else {
+  # 
+}
+```
+
+Here is how to make multiple condition look clean (best practices)...
+
+```{r}
+
+y <- -10
+debug <- TRUE
+
+# Good
+# 1.) 
+if (y < 0 && debug) {
+  message("Y is negative")
+}
+
+# 2.) 
+if (y == 0) {
+  log(x)
+} else {
+  y ^ x
+}
+
+print('-------------------------------------')
+
+# Bad
+
+# 3.) 
+if (y < 0 && debug)
+message("Y is negative")
+
+
+# 4.) 
+if (y == 0) {
+  log(x)
+} 
+else {
+  y ^ x
+}
+```
+
+Q: Can you explain why the last two if statements are bad?
+
+#### Exceptions to the rule
+
+if you have short if statements and you can fit it all in one line, then drop the `{}`
+
+```{r}
+
+y <- 10
+x <- if (y < 20) "Too low" else "Too high"
+
+```
+
+Q: How could you use cut() to simplify this set of nested if-else statements?
+
+```{r}
+
+
+if (temp <= 0) {
+  "freezing"
+} else if (temp <= 10) {
+  "cold"
+} else if (temp <= 20) {
+  "cool"
+} else if (temp <= 30) {
+  "warm"
+} else {
+  "hot"
+}
+```
+
+\
+
+## **19.5 Function arguments**
+
+#### What goes into the argument of a function? 
+
+There is two main categories:
+
+1.) One set supplies the **data** to compute on.
+
+2.) The other supplies arguments that control the **details** of the computation.
+
+For example:
+
+`mean()` :
+
+1.) data is `x`
+
+2.) details are how much data to trim from the ends (`trim`) and how to handle missing values (`na.rm`).
+
+good practice: data goes first, then details goes latter...
+
+Here is an example:
+
+```{r}
+
+# Compute confidence interval around mean using normal approximation
+mean_ci <- function(x, conf = 0.95) {
+  se <- sd(x) / sqrt(length(x))
+  alpha <- 1 - conf
+  mean(x) + se * qnorm(c(alpha / 2, 1 - alpha / 2))
+}
+
+x <- runif(100)
+mean_ci(x)
+#> [1] 0.4976111 0.6099594
+mean_ci(x, conf = 0.99)
+#> [1] 0.4799599 0.6276105
+```
+
+Q: For the function `mean_ci` , what is the details and what is the data?
+
+```{r}
+
+# Good
+mean(1:10, na.rm = TRUE)
+
+# Bad
+mean(x = 1:10, , FALSE)
+mean(, TRUE, x = c(1:10, NA))
+```
+
+Q: Why should we care about doing this!?
+
+#### Checking values...
+
+```{r}
+
+wt_mean <- function(x, w) {
+  sum(x * w) / sum(w)
+}
+wt_var <- function(x, w) {
+  mu <- wt_mean(x, w)
+  sum(w * (x - mu) ^ 2) / sum(w)
+}
+wt_sd <- function(x, w) {
+  sqrt(wt_var(x, w))
+}
+```
+
+What happens if `x` and `w` are not the same length?
+
+```{r}
+print(1:6)
+print(1:3)
+
+wt_mean(1:6, 1:3)
+#> [1] 7.666667
+```
+
+!! R’s vector recycling rules, we don’t get an error.
+
+I.e., things are happening under the hood, so be careful when you do your analyzes, especially your SCIENTIFIC ANALYSIS!
+
+#### How do we catch this types of errors on our own? 
+
+# 
+
+We right `catch statements` ...
+
+```{r}
+
+wt_mean <- function(x, w) {
+  # this is the catch statement
+  if (length(x) != length(w)) {
+    stop("`x` and `w` must be the same length", call. = FALSE)
+  }
+  sum(w * x) / sum(w)
+}
+
+wt_mean(x=1:7, w=1:7)
+wt_mean(x=1:7, w=1:3)
+```
+
+# 
+
+Here is another example:
+
+```{r}
+
+wt_mean <- function(x, w, na.rm = FALSE) {
+  if (!is.logical(na.rm)) {
+    stop("`na.rm` must be logical")
+  }
+  if (length(na.rm) != 1) {
+    stop("`na.rm` must be length 1")
+  }
+  if (length(x) != length(w)) {
+    stop("`x` and `w` must be the same length", call. = FALSE)
+  }
+  
+  if (na.rm) {
+    miss <- is.na(x) | is.na(w)
+    x <- x[!miss]
+    w <- w[!miss]
+  }
+  sum(w * x) / sum(w)
+}
+
+
+wt_mean(x=1:6, w=1:6, na.rm=TRUE)
+
+wt_mean(x=1:6, w=1:6, na.rm=FALSE)
+
+wt_mean(x=1:6, w=1:6, na.rm='foo')
+
+```
+
+## 19.6 Return values
+
+#### There is two things you need to consider
+
+There is two things you need to consider when returning a value:
+
+1.) Does returning early make your function easier to read?
+
+2.) Can you make your function pipeable?
+
+The 1.) statement is important because we makes our code faster... why run the whole function if we can quickly enter if statement that will exist us earlier.
+
+The 2.) statement is obvious since you have experience with piping.
+
+### Explicit return statements
+
+```{r}
+
+complicated_function <- function(x, y, z) {
+  if (length(x) == 0 || length(y) == 0) {
+    return(0)
+  }
+  # ADD Complicated code here
+}
+```
+
+Q: What is the if statement saying?
+
+-----------------------------------------------------------
+
+Here is a better example?
+
+Bad reason!
+
+```{r}
+
+f <- function() {
+  if (x) {
+    # Do 
+    # something
+    # that
+    # takes
+    # many
+    # lines
+    # to
+    # express
+  } else {
+    # return something short
+  }
+}
+```
+
+Good reason!
+
+```{r}
+
+
+f <- function() {
+  if (!x) {
+    return(something_short)
+  }
+
+  # Do 
+  # something
+  # that
+  # takes
+  # many
+  # lines
+  # to
+  # express
+}
+```
+
+### **19.6.2 Writing pipeable functions**
+
+WARNING: somewhat overkill and nontrivial...
+
+two basic types of pipeable functions: transformations and side-effects!
+
+-    **transformations**, an object is passed to the function’s first argument and a modified object is returned
+
+-   **side-effects**, the passed object is not transformed. Instead, the function performs an action on the object, like drawing a plot or saving a file
+
+What is the purpose of **side-effects** functions?
+
+-   They should “invisibly” return the first argument... while they’re not printed they can still be used in a pipeline.
+
+```{r}
+
+show_missings <- function(df) {
+  n <- sum(is.na(df))
+  cat("Missing values: ", n, "\n", sep = "")
+  
+  invisible(df) # here is the side-effect!
+}
+
+
+```
+
+```{r}
+
+# let's see if invisible is printed out
+
+show_missings(mtcars)
+
+```
+
+```{r}
+
+x <- show_missings(mtcars) 
+#> Missing values: 0
+class(x)
+#> [1] "data.frame"
+dim(x)
+#> [1] 32 11
+```
+
+```{r}
+
+# this should be the same as the top... 
+
+class(mtcars)
+
+dim(mtcars)
+
+```
+
+#### Finally, how does this connect back to piping? 
+
+```{r}
+
+mtcars
+```
+
+```{r}
+
+
+# Load the dplyr library
+library(dplyr)
+
+# dplyr is a part of the R "tidyverse"
+library(tidyverse)
+```
+
+```{r}
+
+
+mtcars |>
+  show_missings() |>
+  mutate(mpg = ifelse(mpg < 20, NA, mpg)) |>
+  show_missings() 
+```
+
+Q: what is this piping operation doing?
