@@ -1,0 +1,362 @@
+---
+title: "Ch21_Iteration"
+format: html
+editor: visual
+---
+
+## 
+
+# Introduction
+
+Reducing code duplication has three main benefits:
+
+1.  easier to read the intent of the code
+2.  easier to make coding changes (i.e. pivot)
+3.  fewer bugs or typos
+
+#### Q: Based on your previous lecture, what approach allowed to reduce code? 
+
+Here we will introduce a second way of reducing duplication: iteration
+
+iteration —\> helps you when you need to do the same thing to multiple inputs...
+
+```{r}
+library(tidyverse)
+
+```
+
+## 21.2 For loops
+
+```{r}
+
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+```
+
+If we want to compute median for each columns
+
+```{r}
+
+median(df$a)
+median(df$b)
+median(df$c)
+median(df$d)
+
+```
+
+#### Replace code above with for loop:
+
+```{r}
+output <- vector("double", ncol(df))  # 1. output
+output # defines a empty vector 
+
+for (i in seq_along(df)) {            # 2. sequence
+  output[[i]] <- median(df[[i]])      # 3. body
+}
+
+output
+```
+
+EEveryone for loop has 3 components:
+
+1.  The output: `output <- vector("double", length(x))`. Allocate space for the output... This speeds up the for loop.
+2.  The sequence: `i in seq_along(df)` . Determins what to loop over: each run of the for loop will assign i to different values from `seq_along(df)`
+
+-   note: `seq_along()` similar to `1:length(l)` where `l` is the length of the vector or column.
+
+Example:
+
+```{r}
+
+y <- vector("double", 4)
+seq_along(y)
+
+1:length(y)
+```
+
+3.  The body: `output[[i]] <- median(df[[i]])` . This is the main part of the for loop code!
+
+#### 21.2.1 Exercises
+
+1.  Write for loops to:
+
+    1.  Compute the mean of every column in `mtcars`.
+
+    2.  Determine the type of each column in [`nycflights13::flights`](https://rdrr.io/pkg/nycflights13/man/flights.html).
+
+    3.  Compute the number of unique values in each column of `iris`.
+
+    4.  Generate 10 random normals from distributions with means of -10, 0, 10, and 100.
+
+    Think about the output, sequence, and body **before** you start writing the loop.
+
+```{r}
+
+```
+
+## 21. 3 For loop variations
+
+Different variations of `for loop` .
+
+Four variations of the basic them of the for loop:
+
+1.  Modifying an exiting object, instead of creating a new object
+2.  Looping over names or values, instead of indices
+3.  Handling outputs of unknown length
+4.  Handling sequences of unknown length
+
+#### 21.3.1 Modifying an existing object
+
+```{r}
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+rescale01 <- function(x) {
+  rng <- range(x, na.rm = TRUE)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+
+df$a <- rescale01(df$a)
+df$b <- rescale01(df$b)
+df$c <- rescale01(df$c)
+df$d <- rescale01(df$d)
+```
+
+How can we solve this with a for loop? Think of this 3 components:
+
+1.) Output: swap the dataframe column, so it is the same as input
+
+2.) Sequence: iterate over each column using `seq_along()`
+
+3.) Body: apply `rescale01()`
+
+```{r}
+
+# DO NOT RUN MORE THAN ONCE
+for (i in seq_along(df)) {
+  df[[i]] <- rescale01(df[[i]]) # swap column
+}
+```
+
+### 21.3.2 Looping patterns
+
+looping over the numeric indices with `for (i in seq_along(xs))`, and extracting the value with `x[[i]]`.
+
+1.  Loop over the elements: `for (x in xs))`.
+2.  Loop over the names: `for (nm in names(xs))` .
+
+Q: what is the advantage of 2.) over 1.)? Do you have an example?
+
+#### note: numeric indices are more general (see example)
+
+```{r}
+
+results <- vector("list", length(x))
+names(results) <- names(x)
+
+for (i in seq_along(x)) {
+  name <- names(x)[[i]]
+  value <- x[[i]]
+  
+}
+```
+
+### 21.3.3 Unknown output length
+
+What happens when you don't know the length of the vector?
+
+we can progressively grow the vector
+
+```{r}
+# create a list
+means <- c(0, 1, 2)
+
+# step 0 
+output <- double()
+
+# step 1
+for (i in seq_along(means)) {
+  # step 2
+  n <- sample(100, 1)
+  output <- c(output, rnorm(n, means[[i]]))
+}
+str(output)
+```
+
+#### Q: What is the problem with this approach? 
+
+R has to copy the data from the previous iteration. This means that there is a quadratic time complexity O(n\^2). AVOID!
+
+```{r}
+
+
+out <- vector("list", length(means))
+for (i in seq_along(means)) {
+  n <- sample(100, 1)
+  out[[i]] <- rnorm(n, means[[i]])
+}
+
+# list of vectors
+str(out)
+
+# flatten a list of vectors into a single vector. 
+str(unlist(out))
+
+```
+
+### 21.3.4 Unknown sequence length
+
+We want to stop the loop when a condition is meant... E.g., three heads were achieved.
+
+Use the while loop
+
+```{r}
+
+while (condition) {
+  # body
+}
+```
+
+#### What is the relationship between for and while loop? 
+
+```{r}
+
+for (i in seq_along(x)) {
+  # body
+}
+
+# Equivalent to
+i <- 1
+while (i <= length(x)) {
+  # body
+ 
+ i <- i + 1 
+}
+```
+
+#### Example: 
+
+```{r}
+
+flip <- function() sample(c("T", "H"), 1)
+
+flips <- 0
+nheads <- 0
+
+while (nheads < 3) {
+  if (flip() == "H") {
+    nheads <- nheads + 1
+  } else {
+    nheads <- 0
+  }
+  flips <- flips + 1
+}
+flips
+```
+
+## 21.4 For loops vs functionals
+
+For loops are not as important in R versus other languages (e.g. python) since R is a functional programming language.
+
+```{r}
+
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+
+```
+
+let's compute the mean of every column. Use the for loop like before
+
+```{r}
+output <- vector("double", length(df))
+for (i in seq_along(df)) {
+  output[[i]] <- mean(df[[i]])
+}
+output
+
+```
+
+functional programming example: write the for loop in a function.
+
+```{r}
+
+col_mean <- function(df) {
+  output <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    output[i] <- mean(df[[i]])
+  }
+  output
+}
+
+
+# run function
+col_mean(df)
+```
+
+Let's also compute the median, standard deviation...
+
+```{r}
+
+col_median <- function(df) {
+  output <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    output[i] <- median(df[[i]])
+  }
+  output
+}
+col_sd <- function(df) {
+  output <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    output[i] <- sd(df[[i]])
+  }
+  output
+}
+
+col_median(df)
+col_sd(df)
+
+
+```
+
+#### Exercise: can you rewrite these functions into 1?
+
+```{r}
+
+f1 <- function(x) abs(x - mean(x)) ^ 1
+f2 <- function(x) abs(x - mean(x)) ^ 2
+f3 <- function(x) abs(x - mean(x)) ^ 3
+```
+
+===========================
+
+\< Ans\>
+
+===========================
+
+Instead of making `col_mean()`,`col_median()`, `col_sd()` by adding an `fun` argument.
+
+```{r}
+
+col_summary <- function(df, fun) {
+  out <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    out[i] <- fun(df[[i]])
+  }
+  out
+}
+col_summary(df, median)
+col_summary(df, mean)
+col_summary(df, sd)
+
+```

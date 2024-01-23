@@ -1,0 +1,323 @@
+---
+title: "Data Import"
+format: html
+editor: visual
+---
+
+# Data Import
+
+Goal:
+
+-   learn how to read plain-text rectangular files into R (note: it will generalize to different data types)
+
+```{r}
+library(tidyverse)
+```
+
+#### Reading files with readr package
+
+-   `read_csv()` : reads comma delimited files
+
+-   `read_csv2()` : reads semicolon separated files
+
+-   `read_tsv()` : reads tab delimited files
+
+-   `read_delim()` : reads in files with any delimiter
+
+-   `read_fwf()` : reads fixed width files; note: `fwf_widths()` allows to specify fields with by their widths; `fwf_positions()` or by position
+
+-   `read_table()` reads a common variation of fixed width files where columns are separated by white space
+
+-   `read_log()` reads Apache style log files
+
+#### Download spreadsheet
+
+<https://github.com/hadley/r4ds/blob/main/data/heights.csv>
+
+```{r}
+
+
+full_path <- '/Users/niksapraljak1/Uchicago_classroom/TA_courses/DS4Bio_R_2024/code_walkthroughs/D01112024_walkthrough/Lecture_24_01_23/data'
+
+heights <- read_csv(
+  paste(full_path,"/heights.csv", sep="")
+)
+
+heights
+```
+
+#### Example of a inline csv file 
+
+To test readr functionality
+
+```{r}
+read_csv("a,b,c
+1,2,3
+4,5,6")
+
+```
+
+Note: `read_csv()` uses the first line as the column names.
+
+1.  Sometimes there can be a few lines of metadata, so we want to skip it using the folloing `skip = n` or remove comments with `comment = '#'`
+
+#### Skip lines
+
+```{r}
+
+#with no skipping 
+read_csv("The first line of metadata
+  The second line of metadata
+  x,y,z
+  1,2,3")
+
+# with skipping
+read_csv("The first line of metadata
+  The second line of metadata
+  x,y,z
+  1,2,3", skip = 2)
+```
+
+#### Remove comments 
+
+```{r}
+
+# keep commments
+read_csv("# A comment I want to skip
+  x,y,z
+  1,2,3")
+
+# remove comments 
+read_csv("# A comment I want to skip
+  x,y,z
+  1,2,3", comment = "#")
+
+```
+
+2.  data might have column names... Thus, use `col_names = FALSE` to not create a column names based on the first row.
+
+#### Create a placeholder for header
+
+```{r}
+read_csv("1,2,3\n4,5,6", col_names = FALSE)
+
+
+```
+
+#### Q: what does `\n` do ? 
+
+note: it is a general character used in programming languages and text spreadsheets.
+
+#### Explicitly name the header
+
+```{r}
+
+read_csv("1,2,3\n4,5,6", col_names = FALSE)
+
+```
+
+#### Create a placeholder for rows
+
+I.e., if we have a column but the rows are missing, we can use `na=.`
+
+```{r}
+
+read_csv("a,b,c\n1,2,.", na = ".")
+
+```
+
+## Exercise 11.2.2
+
+5.  Identify what is wrong with each of the following inline CSV files. What happens when you run the code?
+
+```{r}
+
+read_csv("a,b\n1,2,3\n4,5,6")
+read_csv("a,b,c\n1,2\n1,2,3,4")
+read_csv("a,b\n\"1")
+read_csv("a,b\n1,2\na,b")
+read_csv("a;b\n1;3")
+```
+
+============================
+
+\<ANS\> \
+============================
+
+## 11. Parsing a vector
+
+How is `readr` functions reading files from disk? \
+\
+We need to first under `parse_*()`... These functions take a character vector (i.e. list of strings) and converts them into a vector that is logical, integer, or date based.
+
+```{r}
+
+str(parse_logical(c("TRUE", "FALSE", "NA")))
+
+str(parse_integer(c("1", "2", "3")))
+
+str(parse_date(c("2010-01-01", "1979-10-14")))
+
+
+```
+
+#### Treating missing values with na
+
+```{r}
+parse_integer(c("1", "231", ".", "456"), na = ".")
+
+```
+
+#### Warnings...
+
+```{r}
+x <- parse_integer(c("123", "345", "abc", "123.45"))
+x
+
+```
+
+If we need to print more issues...
+
+```{r}
+problems(x)
+
+```
+
+### 8 different parsers...
+
+1.  `parse_logical()` and `parse_integer()` parse logicals and integers respectively.
+2.  `parse_double()` is a strict numeric parser; `parse_number()` is a flexible numeric parser
+3.  `parse_character()` straightforward... relevant for character encodings
+4.  `parse_factor`() create factors, the data structure that R uses to represent categorical variables with fixed and known values
+5.  `parse_datetime()`, `parse_date()`, and `parse_time()` allow you to parse various data & time specifications.
+
+11.3.1 Numbers
+
+Three reasons why parsing number might be tough...
+
+1.  People write number differently in different parts of the world. `.` vs `,`
+2.  Numbers are often surrounded by other characters that provide some context, like `"$1000"` or `"10%"`
+3.  Numbers often contan "grouping" characters to make them easier to read
+
+#### MOST IMPORTANT: how do we read the decimal mark (problem 1)
+
+```{r}
+
+parse_double("1.23")
+
+parse_double("1,23", locale=locale(decimal_mark = ','))
+
+
+```
+
+#### How do we ignore non-numeric characters (problem 2)
+
+solution is `parse_number`
+
+```{r}
+parse_number("$100")
+
+parse_number("20%")
+
+parse_number("It cost $123.45")
+
+
+```
+
+```{r}
+# Used in America
+parse_number("$123,456,789")
+
+# Used in many parts of Europe
+parse_number("123.456.789", locale = locale(grouping_mark = "."))
+
+
+# Used in Switzerland
+parse_number("123'456'789", locale = locale(grouping_mark = "'"))
+```
+
+### 11.3.3 Factors
+
+Factors are used to represent categorical variables that have a known set of possible values.
+
+```{r}
+
+fruit <- c("apple", "banana")
+parse_factor(c("apple", "banana", "bananana"), levels=fruit)
+```
+
+## 11.4 Parsing a file
+
+We will learn here how `readr` parses a file. We need take note of two things:
+
+1.  How `readr` automatically guesses the type of each column.
+2.  How to override the default specification
+
+```{r}
+
+guess_parser("2010-10-01")
+
+guess_parser("15:01")
+
+guess_parser(c("TRUE", "FALSE"))
+
+guess_parser(c("1", "5", "9"))
+
+guess_parser(c("12,352,561"))
+
+```
+
+### 11.4.3 Other strategies
+
+```{r}
+challenge2 <- read_csv(readr_example("challenge.csv"), guess_max = 1001)
+challenge2
+
+```
+
+#### NOTE: easier to diagnose problems if we read columns as character vectors
+
+```{r}
+challenge2 <- read_csv(readr_example("challenge.csv"), 
+  col_types = cols(.default = col_character())
+)
+
+challenge2
+```
+
+#### When loading very large data...
+
+We can restrict the size by using `n_max` .
+
+```{r}
+
+# load spreadsheet
+read_csv(readr_example("challenge.csv"))
+
+
+# load spreadheet for only n_max rows
+read_csv(readr_example("challenge.csv"), n_max=2)
+```
+
+## 11.5 Writing to a file
+
+#### Getting working directory...
+
+```{r}
+
+# working directory
+getwd()
+```
+
+```{r}
+
+challenge_df <- read_csv(readr_example("challenge.csv"))
+
+write_csv(challenge_df, "./data/challenge.csv")
+
+```
+
+```{r}
+read_csv("./data/challenge.csv")
+
+```
